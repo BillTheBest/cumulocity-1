@@ -1,0 +1,8 @@
+{"level":"info","message":"[\u001b[34mserver\u001b[39m] bootstrapping","timestamp":"2016-03-17T15:07:41.916Z"}
+{"level":"info","message":"[\u001b[35mServer\u001b[39m] registering GET /test","timestamp":"2016-03-17T15:07:41.938Z"}
+{"level":"info","message":"[\u001b[35mServer\u001b[39m] starting server on port 80","timestamp":"2016-03-17T15:07:41.940Z"}
+{"level":"info","message":"[\u001b[35mServer\u001b[39m] server started on port 80","timestamp":"2016-03-17T15:07:42.038Z"}
+{"level":"info","message":"[\u001b[34mserver\u001b[39m] bootstrapping","timestamp":"2016-03-17T15:08:28.154Z"}
+{"level":"info","message":"[\u001b[35mServer\u001b[39m] registering GET /test","timestamp":"2016-03-17T15:08:28.175Z"}
+{"level":"info","message":"[\u001b[35mServer\u001b[39m] starting server on port 80","timestamp":"2016-03-17T15:08:28.176Z"}
+{"level":"info","message":"[\u001b[35mServer\u001b[39m] server started on port 80","timestamp":"2016-03-17T15:08:28.278Z"}
