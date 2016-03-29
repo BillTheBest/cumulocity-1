@@ -104,6 +104,57 @@ void endCall() {
   remote->println("ATH");
 }
 
+void httpGet(String url) {
+  remote->println("AT+CSQ");
+  delay(100);
+  showGsmOutput();
+ 
+  remote->println("AT+CGATT?");
+  delay(100);
+  showGsmOutput();
+ 
+  remote->println("AT+SAPBR=3,1,\"CONTYPE\",\"GPRS\"");//setting the SAPBR, the connection type is using gprs
+  delay(1000);
+  showGsmOutput();
+ 
+  remote->println("AT+SAPBR=3,1,\"APN\",\"internet.emt.ee\"");//setting the APN, the second need you fill in your local apn server
+  delay(4000);
+  showGsmOutput();
+ 
+  remote->println("AT+SAPBR=1,1");//setting the SAPBR, for detail you can refer to the AT command mamual
+  delay(2000);
+  showGsmOutput();
+ 
+  remote->println("AT+HTTPINIT"); //init the HTTP request
+  delay(2000); 
+  showGsmOutput();
+ 
+  remote->print("AT+HTTPPARA=\"URL\",\"");// setting the httppara, the second parameter is the website you want to access
+  remote->print(url);
+  remote->println("\"");
+  delay(1000);
+  showGsmOutput();
+ 
+  remote->println("AT+HTTPACTION=0");//submit the request 
+  delay(10000);//the delay is very important, the delay time is base on the return from the website, if the return datas are very large, the time required longer.
+  //while(!remote->available());
+  showGsmOutput();
+ 
+  remote->println("AT+HTTPREAD");// read the data from the website you access
+  delay(300);
+  showGsmOutput();
+ 
+  remote->println("");
+  delay(100);
+}
+
+void showGsmOutput()
+{
+  while(remote->available() != 0) {
+    local->write(remote->read());
+  }
+}
+
 void handleCommand(String command, String parameters[], int parameterCount) {
   if (command == "on" && parameterCount == 0) {
     handleOnCommand();
@@ -115,6 +166,8 @@ void handleCommand(String command, String parameters[], int parameterCount) {
     handleSmsCommand(parameters);
   } else if (command == "call" && parameterCount == 1) {
     handleCallCommand(parameters);
+  } else if (command == "http" && parameterCount == 1) {
+    handleHttpCommand(parameters);
   } else {
     local->print("Unhandled command '");
     local->print(command);
@@ -189,4 +242,14 @@ void handleCallCommand(String parameters[]) {
   startCall(number);
   delay(20000);
   endCall();
+}
+
+void handleHttpCommand(String parameters[]) {
+  String url = parameters[0];
+
+  local->print("Fetching HTTP GET '");
+  local->print(url);
+  local->println("'");
+
+  httpGet(url);
 }

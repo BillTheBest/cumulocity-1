@@ -1,9 +1,10 @@
 #include "Commander.h"
 
-Commander::Commander(Stream *serial, char startToken, char endToken, char parameterDelimiter, char escapeChar) :
+Commander::Commander(Stream *serial, char startToken, char endToken, char commandDelimiter, char parameterDelimiter, char escapeChar) :
   serial(serial),
   startToken(startToken),
   endToken(endToken),
+  commandDelimiter(commandDelimiter),
   parameterDelimiter(parameterDelimiter),
   escapeChar(escapeChar),
   lastChar('0'),
@@ -54,8 +55,9 @@ void Commander::parseCommand(String buffer) {
     if (parameterCount >= COMMANDER_MAX_PARAMETER_COUNT - 1) {
       break;
     }
-    
-    int delimiterPos = buffer.indexOf(parameterDelimiter, lastDelimiterPos + 1);
+
+    char searchDelimiter = delimitersFound == 0 ? commandDelimiter : parameterDelimiter;
+    int delimiterPos = buffer.indexOf(searchDelimiter, lastDelimiterPos + 1);
     
     if (delimiterPos == -1) {
       // there are no parameters so the whole command is a name
