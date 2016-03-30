@@ -1,3 +1,4 @@
+import path from 'path';
 import bunyan from 'bunyan';
 import BunyanSlack from 'bunyan-slack';
 
@@ -6,7 +7,8 @@ export const cumulocity = {
 };
 
 export const server = {
-	port: 80
+	port: 80,
+	controllersDirectory: path.join(__dirname, 'controllers')
 };
 
 export const slack = {
