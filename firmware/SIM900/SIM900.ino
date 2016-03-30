@@ -1,16 +1,17 @@
+#include <SoftwareSerial.h>
 #include "Commander.h"
 
 // application config
 const int GSM_BAUDRATE = 19200;
-const int COM_BAUDRATE = 115200;
-const unsigned long BTN_DEBOUNCE_PERIOD_MS = 300;
+const int COM_BAUDRATE = 19200;
 
 // pin config
 const int GSM_PWRKEY_PIN = 9;
 
 // serials
 Serial_ *local = &Serial;
-HardwareSerial *remote = &Serial1;
+//HardwareSerial *remote = &Serial1;
+SoftwareSerial *remote = new SoftwareSerial(10, 8);
 
 // runtime
 unsigned long lastUpdateTime = 0;
@@ -27,6 +28,7 @@ void setup() {
 void loop() {
   unsigned long currentTime = millis();
   unsigned long dt = currentTime - lastUpdateTime;
+  
   updateSerials(currentTime, dt);
   updateCommander(currentTime, dt);
 
@@ -35,6 +37,7 @@ void loop() {
 
 void setupPinModes() {
   pinMode(GSM_PWRKEY_PIN, OUTPUT);
+  // pinMode(7, INPUT);
 }
 
 void setupSerials() {
@@ -48,7 +51,7 @@ void updateSerials(unsigned long currentTime, unsigned long dt) {
 
     remote->print(character);
   }*/
-
+  
   while (remote->available() > 0) {
     char character = remote->read();
 
@@ -166,6 +169,8 @@ void handleCommand(String command, String parameters[], int parameterCount) {
     handleSmsCommand(parameters);
   } else if (command == "call" && parameterCount == 1) {
     handleCallCommand(parameters);
+  } else if (command == "recharge" && parameterCount == 1) {
+    handleRechargeCommand(parameters);
   } else if (command == "http" && parameterCount == 1) {
     handleHttpCommand(parameters);
   } else {
@@ -242,6 +247,23 @@ void handleCallCommand(String parameters[]) {
   startCall(number);
   delay(20000);
   endCall();
+}
+
+void handleRechargeCommand(String parameters[]) {
+  String hiddenNumber = parameters[0];
+  String callNumber = "*142*" + hiddenNumber + "#";
+
+  local->print("Recharging with '");
+  local->print(hiddenNumber);
+  local->print("' by calling '");
+  local->print(callNumber);
+  local->print("' for 20 seconds... ");
+  
+  startCall(callNumber);
+  delay(20000);
+  endCall();
+
+  local->println("done!");
 }
 
 void handleHttpCommand(String parameters[]) {
