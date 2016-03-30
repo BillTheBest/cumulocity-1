@@ -1,23 +1,11 @@
-import serveStatic from 'serve-static';
 import config from './config';
 import Server from './lib/server/Server';
-import logger from './lib/logger';
 
-const log = logger.get(__filename, { env: 'dev' });
-
-log('bootstrapping', 123, { 'a': 1 });
-
-
-const server = new Server();
+const server = new Server(config.server);
 
 server.setupDefault();
 
-// serve static files from apps
-server.app.use(serveStatic('apps', {
-	index: 'index.html'
-}));
-
-server.get('/test', (req, res) => {
+server.register('test', Server.Method.GET, '/test', (req, res) => {
 	res.send('test response');
 });
 
