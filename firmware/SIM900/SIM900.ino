@@ -2,8 +2,8 @@
 #include "Commander.h"
 
 // application config
-const int GSM_BAUDRATE = 19200;
-const int COM_BAUDRATE = 19200;
+const int GSM_BAUDRATE = 4800;
+const int COM_BAUDRATE = 115200;
 
 // pin config
 const int GSM_PWRKEY_PIN = 9;
@@ -72,8 +72,6 @@ void toggleGsmPower() {
   delay(2000);
   digitalWrite(GSM_PWRKEY_PIN, LOW);
   delay(3000);
-
-  local->println("done!");
 }
 
 void sendTextMessage(String number, String message) {
@@ -204,9 +202,11 @@ void handleOnCommand() {
     return;
   }
 
-  local->println("Turning GSM module on");
+  local->print("Turning GSM module on.. ");
 
   toggleGsmPower();
+
+  local->println("done!");
 }
 
 void handleOffCommand() {

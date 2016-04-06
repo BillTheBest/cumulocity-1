@@ -32,6 +32,8 @@
 
 #define CUMULOCITY_CLIENT_VERSION 590
 
+#define DEBUG_ENABLED
+
 #include <avr/pgmspace.h>
 #include <avr/eeprom.h>
 #include "inetGSM.h"
