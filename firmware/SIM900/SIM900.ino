@@ -94,6 +94,12 @@ void sendTextMessage(String number, String message) {
   remote->println();
 }
 
+void readTextMessage(String index) {
+  remote->print("AT+CMGR=");
+  remote->print(index);
+  remote->print("\r");
+}
+
 void startCall(String number) {
  remote->print("ATD + ");
  remote->print(number);
@@ -166,7 +172,9 @@ void handleCommand(String command, String parameters[], int parameterCount) {
   } else if (command == "cmd" && parameterCount == 1) {
     handleCmdCommand(parameters);
   } else if (command == "sms" && parameterCount == 2) {
-    handleSmsCommand(parameters);
+    handleSendSmsCommand(parameters);
+  } else if (command == "read" && parameterCount == 1) {
+    handleReadSmsCommand(parameters);
   } else if (command == "call" && parameterCount == 1) {
     handleCallCommand(parameters);
   } else if (command == "recharge" && parameterCount == 1) {
@@ -224,7 +232,7 @@ void handleCmdCommand(String parameters[]) {
   remote->print('\r');  
 }
 
-void handleSmsCommand(String parameters[]) {
+void handleSendSmsCommand(String parameters[]) {
   String number = parameters[0];
   String message = parameters[1];
 
@@ -235,6 +243,15 @@ void handleSmsCommand(String parameters[]) {
   local->println("'");
   
   sendTextMessage(number, message);
+}
+
+void handleReadSmsCommand(String parameters[]) {
+  String index = parameters[0];
+
+  local->print("Reading SMS message #");
+  local->println(index);
+  
+  readTextMessage(index);
 }
 
 void handleCallCommand(String parameters[]) {
