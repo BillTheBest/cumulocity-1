@@ -84,8 +84,15 @@ inline void GSMModule::disconnectTCP() {
 
 /* ############################## HttpResponse ############################## */
 
-HttpResponse::HttpResponse(GSMModule* mod, char* jsonElement, int elementBufferLength, char* jsonValue, int valueBufferLength) {
-    readHeader(NULL);
+HttpResponse::HttpResponse(GSMModule* mod, char* jsonElement, int elementBufferLength, char* jsonValue, int valueBufferLength, boolean isSuccess) {
+	if (!isSuccess)
+	{
+		finish(mod);
+		
+		return;
+	}
+
+	readHeader(NULL);
 
     if(findJsonElementContaining("control", jsonElement, elementBufferLength)) {
 #ifdef DEBUG_ENABLED
@@ -103,8 +110,15 @@ HttpResponse::HttpResponse(GSMModule* mod, char* jsonElement, int elementBufferL
     finish(mod);
 }
 
-HttpResponse::HttpResponse(GSMModule* mod, const char* jsonPath, char* buffer, const int bufferLength, char* httpDateBuffer) {
-    readHeader(httpDateBuffer);
+HttpResponse::HttpResponse(GSMModule* mod, const char* jsonPath, char* buffer, const int bufferLength, boolean isSuccess, char* httpDateBuffer) {
+	if (!isSuccess)
+	{
+		finish(mod);
+
+		return;
+	}
+	
+	readHeader(httpDateBuffer);
 
     if(jsonPath != NULL && buffer != NULL && bufferLength > 0) {
         if(locateJsonValue(jsonPath)) {
@@ -209,33 +223,35 @@ bool HttpResponse::readToElementStart(char &c, unsigned long &prevTime) {
 
 void HttpResponse::finish(GSMModule* mod) {
 #ifdef DEBUG_ENABLED
-    Serial.print(".");
+    Serial.print(F("HttpResponse::finish waiting for response.. "));
 #endif
     waitForEndOfResponse();
 #ifdef DEBUG_ENABLED
-    Serial.println(".");
+    Serial.println("done!");
 #endif
     delay(1000);
     mod->disconnectTCP();
 }
 
 void HttpResponse::readHeader(char* httpDateBuffer) {
-#ifdef DEBUG_ENABLED
-    Serial.println(F("Response (some dots are additional for debug):")); // debug dots
-#endif
+
     readHttpCode();
+
+    if(httpDateBuffer != NULL && httpCode == 200) {
 #ifdef DEBUG_ENABLED
-    Serial.print(".");
+		Serial.print(F("HttpResponse::readHeader reading date.. "));
 #endif
-    if(httpDateBuffer != NULL) {
         readDate(httpDateBuffer);
-    }
 #ifdef DEBUG_ENABLED
-    Serial.print(".");
+		Serial.println("done!");
 #endif
+    }
 }
 
 void HttpResponse::readHttpCode() {
+#ifdef DEBUG_ENABLED
+	Serial.print(F("HttpResponse::readHeader reading http code.. "));
+#endif
     char buff[20];
     buff[19] = '\0';
     // read HTTP code
@@ -256,6 +272,11 @@ void HttpResponse::readHttpCode() {
     char* code = strstr(buff, " ");
     code++;
     httpCode = atoi(code);
+
+#ifdef DEBUG_ENABLED
+	Serial.print(F("done, got: "));
+	Serial.println(httpCode);
+#endif
 }
 
 int HttpResponse::readDate(char* httpDate) {
@@ -626,64 +647,53 @@ int HttpResponse::getHttpCode() {
 
 /* ############################## HttpRequest ############################## */
 
-HttpRequest::HttpRequest(GSMModule* mod, const char* host, const int port) {
-    bool connected = false;
-    int attemptsCounter = 0;
-    while(attemptsCounter < 3) {
-        if(!mod->connectTCP(host, port)) {
-            attemptsCounter++;
-        } else {
-            connected = true;
-            attemptsCounter = 3;
-        }
-    }
-    if(!connected) {
-        Serial.println(F("TCP Failed"));
-    }
+HttpRequest::HttpRequest(GSMModule* mod, const char* host, const int port) : mod(mod) {
+	connect(mod, host, port);
 }
 
 HttpRequest::HttpRequest(GSMModule* mod, const char* host, const char* path, const int port, const __FlashStringHelper* type) : mod(mod) {
-    bool connected = false;
-    int attemptsCounter = 0;
-    while(attemptsCounter < 3) {
-        if(!mod->connectTCP(host, port)) {
-            attemptsCounter++;
-        } else {
-            connected = true;
-            attemptsCounter = 3;
-        }
-    }
-    if(!connected) {
-        Serial.println(F("TCP Failed"));
-    }
-
-    write(type);
-    write(F(" "));
-    write(path);
-    write(HTTP_HEADER_FINISH);
-    write(host);
+	if (connect(mod, host, port)) {
+		write(type);
+		write(F(" "));
+		write(path);
+		write(HTTP_HEADER_FINISH);
+		write(host);
+	}
 }
 
 HttpRequest::HttpRequest(GSMModule* mod, const char* host, const __FlashStringHelper* path, const int port, const __FlashStringHelper* type) : mod(mod) {
-    bool connected = false;
-    int attemptsCounter = 0;
-    while(attemptsCounter < 3) {
-        if(!mod->connectTCP(host, port)) {
-            attemptsCounter++;
-        } else {
-            connected = true;
-            attemptsCounter = 3;
-        }
-    }
-    if(!connected) {
-        Serial.println(F("TCP Failed"));
-    }
+	if (connect(mod, host, port)) {
+		write(type);
+		write(F(" "));
+		write(path);
+		write(HTTP_HEADER_FINISH);
+		write(host);
+	}
+}
 
-    write(type);
-    write(F(" "));
-    write(path);
-    write(HTTP_HEADER_FINISH);
-    write(host);
+boolean HttpRequest::connect(GSMModule* mod, const char* host, const int port, int retryCount) {
+	int attemptsCounter = 0;
+
+	while (attemptsCounter < retryCount)
+	{
+		attemptsCounter++;
+
+#ifdef DEBUG_ENABLED
+		Serial.print(F("HttpRequest::connect Attempt to connect #"));
+		Serial.println(attemptsCounter);
+#endif
+
+		if (mod->connectTCP(host, port))
+		{
+			return true;
+		}
+	}
+
+	Serial.print(F("HttpRequest::connect connecting failed after "));
+	Serial.print(attemptsCounter);
+	Serial.println(F(" attempts"));
+
+	return false;
 }
 
 void HttpRequest::authorization(const char* authorization) {
@@ -779,51 +789,54 @@ void HttpRequest::write(const int content) {
 }
 
 HttpResponse HttpRequest::execute(char* jsonElement, int elementBufferLength, char* jsonValue, int valueBufferLength) {
-    write(F("\n\n"));
-    char endChar[2];
-    endChar[0] = 0x1a;
-    endChar[1] = '\0';
-    write(endChar);
+	boolean isSuccess = executeAndWaitForResponse();
 
-    switch(gsm.WaitResp(2000, 50, "SEND OK")) {
-    case RX_TMOUT_ERR:
-        Serial.println(F("RX TMOUT ERR"));
-        break;
-    case RX_FINISHED_STR_NOT_RECV:
-        Serial.println(RX_FINISHED_STR);
-        break;
-    }
-#ifdef DEBUG_ENABLED
-    Serial.println(F("REQ SENT"));
-#endif
-
-    return HttpResponse(mod, jsonElement, elementBufferLength, jsonValue, valueBufferLength);
+    return HttpResponse(mod, jsonElement, elementBufferLength, jsonValue, valueBufferLength, isSuccess);
 }
 
 HttpResponse HttpRequest::execute(const char* jsonPath, char* buffer, int bufferLength, char* timeBuffer) {
-    write(F("\n\n"));
-    char endChar[2];
-    endChar[0] = 0x1a;
-    endChar[1] = '\0';
-    write(endChar);
+	boolean isSuccess = executeAndWaitForResponse();
 
-    switch(gsm.WaitResp(2000, 50, "SEND OK")) {
-    case RX_TMOUT_ERR:
-        Serial.println(F("RX TMOUT ERR"));
-        break;
-    case RX_FINISHED_STR_NOT_RECV:
-        Serial.println(RX_FINISHED_STR);
-        break;
-    }
-#ifdef DEBUG_ENABLED
-    Serial.println(F("REQ SENT"));
-#endif
-
-    return HttpResponse(mod, jsonPath, buffer, bufferLength, timeBuffer);
+    return HttpResponse(mod, jsonPath, buffer, bufferLength, isSuccess, timeBuffer);
 }
 
 HttpResponse HttpRequest::execute(char* timeBuffer) {
     return execute(NULL, NULL, 0, timeBuffer);
+}
+
+boolean HttpRequest::executeAndWaitForResponse()
+{
+#ifdef DEBUG_ENABLED
+	Serial.println(F("HttpRequest::executeAndWaitForResponse executing"));
+#endif
+
+	write(F("\n\n"));
+	char endChar[2];
+	endChar[0] = 0x1a;
+	endChar[1] = '\0';
+	write(endChar);
+
+	byte responseCode = gsm.WaitResp(10000, 100, "SEND OK");
+
+	switch (responseCode)
+	{
+	case RX_TMOUT_ERR:
+		Serial.println(F("HttpRequest::execute got timeout"));
+		return false;
+
+	case RX_FINISHED_STR_NOT_RECV:
+		Serial.println(RX_FINISHED_STR);
+		return false;
+
+	}
+
+
+#ifdef DEBUG_ENABLED
+	Serial.print(F("HttpRequest::execute successful with code: "));
+	Serial.println((int)responseCode);
+#endif
+
+	return true;
 }
 
 /* ############################## HttpClient ############################## */
@@ -1422,6 +1435,11 @@ void CumulocityPlatform::registerForServerOperation(void (*functionPtr)(), char*
 
 const char* CumulocityPlatform::getTime() {
     if(lastTimeUpdate == 0) {
+#ifdef DEBUG_ENABLED
+		Serial.print("Fetching time from ");
+		Serial.println(IDENTITY_PATH);
+#endif
+
         HttpClient client(mod);
         HttpRequest* request = client.get(host, IDENTITY_PATH);
 
@@ -1431,10 +1449,20 @@ const char* CumulocityPlatform::getTime() {
         HttpResponse response = request->execute(time);
         delete request;
     } else {
+#ifdef DEBUG_ENABLED
+		Serial.print("Reference time already exists: ");
+		Serial.println(time);
+#endif
         unsigned long diff = millis() - lastTimeUpdate;
         lastTimeUpdate = millis();
         addTime(time, diff);
     }
+
+#ifdef DEBUG_ENABLED
+	Serial.print("Extracted current time: '");
+	Serial.print(time);
+	Serial.println("'");
+#endif
 
     return time;
 }

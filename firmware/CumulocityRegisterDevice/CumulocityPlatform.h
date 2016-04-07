@@ -100,8 +100,8 @@ public:
       *     [httpDateBuffer] - buffer for date (optional)
       * Parameter httpDateBuffer must be at least 23 long! (no check performed)
       */
-    HttpResponse(GSMModule* mod, const char* jsonPath, char* buffer, const int bufferLength, char* httpDateBuffer = NULL);
-    HttpResponse(GSMModule* mod, char* jsonElement, int elementBufferLength, char* jsonValue, int valueBufferLength);
+    HttpResponse(GSMModule* mod, const char* jsonPath, char* buffer, const int bufferLength, boolean isSuccess, char* httpDateBuffer = NULL);
+    HttpResponse(GSMModule* mod, char* jsonElement, int elementBufferLength, char* jsonValue, int valueBufferLength, boolean isSuccess);
 
     /**
       * Returns the HTTP code of the response.
@@ -113,6 +113,9 @@ class HttpRequest {
 
 private:
     GSMModule* mod;
+
+	boolean connect(GSMModule* mod, const char* host, const int port, int retryCount = 3);
+	boolean executeAndWaitForResponse();
 
 public:
     /**

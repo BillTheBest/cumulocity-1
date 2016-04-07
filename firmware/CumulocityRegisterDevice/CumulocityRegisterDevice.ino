@@ -77,7 +77,7 @@ void loop()
 		return;
 	}
 
-	raiseAlarm();
+	//raiseAlarm();
 	sendMeasurement();
 
 	delay(60000);
@@ -91,7 +91,8 @@ void sendMeasurement()
 	Serial.print(value);
 	Serial.println("'.. ");
 
-	int result = client.sendMeasurement("Light", "2016-04-06T09:37:21.966Z", "c8y_LightMeasurement", "e", value, "lx");
+	// int result = client.sendMeasurement("Light", "2016-04-06T09:37:21.966Z", "c8y_LightMeasurement", "e", value, "lx");
+	int result = client.sendMeasurement("Light", "c8y_LightMeasurement", "e", value, "lx");
 
 	Serial.print(F("done with result: "));
 	Serial.print(result);
@@ -101,7 +102,8 @@ void sendMeasurement()
 void raiseAlarm()
 {
 	Serial.print(F("Raising alarm.. "));
-	int result = client.raiseAlarm("com_cumulocity_events_TamperEvent", "ACTIVE", "MINOR", "2016-04-06T09:37:21.966Z", "Tamper sensor triggered");
+	//int result = client.raiseAlarm("com_cumulocity_events_TamperEvent", "ACTIVE", "MINOR", "2016-04-06T09:37:21.966Z", "Tamper sensor triggered");
+	int result = client.raiseAlarm("com_cumulocity_events_TamperEvent", "ACTIVE", "MINOR", "Tamper sensor triggered");
 
 	if (result < 0)
 	{
