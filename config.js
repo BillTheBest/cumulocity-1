@@ -8,7 +8,8 @@ export const cumulocity = {
 
 export const server = {
 	port: 80,
-	controllersDirectory: path.join(__dirname, 'controllers')
+	controllersDirectory: path.join(__dirname, 'controllers'),
+	debug: false
 };
 
 export const slack = {
