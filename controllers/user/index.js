@@ -37,18 +37,22 @@ export default class UserController extends AbstractController {
 		};
 	}
 
-	getUser() {
+	post() {
 		return {
-			description: 'Fetches list of all users',
+			description: 'Adds a new user',
 			parameters: {
-				id: joi.number().min(1)
+				name: joi.string().min(3).required()
 			},
+			path: '/create',
 			run(parameters) {
-				return {
-					id: 1,
-					name: 'Priit',
-					parameters
+				const user = {
+					id: this.users.length,
+					name: parameters.name
 				};
+
+				this.users.push(user);
+
+				return user;
 			}
 		};
 	}
