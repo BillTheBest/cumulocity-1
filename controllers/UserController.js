@@ -1,5 +1,5 @@
-import AbstractController from '../../lib/server/AbstractController';
-import Errors from '../../errors';
+import AbstractController from '../lib/server/AbstractController';
+import Errors from '../errors';
 import joi from 'joi';
 
 export default class UserController extends AbstractController {
