@@ -46,7 +46,7 @@ export default class UserController extends AbstractController {
 			path: '/create',
 			run(parameters) {
 				const user = {
-					id: this.users.length,
+					id: this.users.length + 1,
 					name: parameters.name
 				};
 
