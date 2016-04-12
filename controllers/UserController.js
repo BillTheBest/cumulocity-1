@@ -16,7 +16,7 @@ export default class UserController extends AbstractController {
 		}];
 	}
 	
-	get() {
+	getUserById() {
 		return {
 			description: 'Fetches information about a selected user',
 			path: '/:id',
@@ -37,13 +37,13 @@ export default class UserController extends AbstractController {
 		};
 	}
 
-	post() {
+	putNewUser() {
 		return {
 			description: 'Adds a new user',
 			parameters: {
 				name: joi.string().min(3).required()
 			},
-			path: '/create',
+			path: '/',
 			run(parameters) {
 				const user = {
 					id: this.users.length + 1,
